@@ -15,6 +15,11 @@ payers = data.frame(
              "Unknown")
                     )
 
+atype = data.frame(atype = as.character(c(1:5, 9)),
+                   admission = c("emergency", "urgent", 
+                                 "elective", "newborn", "trauma",
+                                 "unknown"))
+
 # creating readable data on the outcome
 pstat = data.frame(
   code =as.character(c(1:7, 20, 43, 50, 51)),
@@ -35,6 +40,9 @@ pstat = data.frame(
 df2 = left_join(df, payers, by = c("payer" = "num"))
 df2 = df2%>%
   left_join( pstat, by = c("pstat" = "code"))
+
+df2 = df2%>%
+  left_join(atype)
 
 df2 = df2%>%
   mutate(outcome_group = ifelse(pstat == 1, "Home", "Other"),
@@ -75,9 +83,10 @@ cost_by_insurance = df2%>%
   group_by(payers)%>%
   summarise(cost = mean(as.numeric(tchg), na.rm = T))
 
+# difference in dx code by payers -----------------------------------------
 
 df3 = df2%>%
-  select(id, provnpi, pstat, dx1, tchg, payers, payer_group, outcome)
+  select(id, provnpi, pstat, dx1, tchg, payers, payer_group, outcome, outcome_group, admission)
 
 # https://dexur.com/icd9/65421/
 
@@ -98,3 +107,20 @@ private= df3%>%
   group_by(dx1)%>%
   summarise(count = n())%>%
   arrange(desc(count))
+
+
+# discharge ---------------------------------------------------------------
+
+payer_groups = df3%>%
+  group_by(payer_group)%>%
+  summarise(count = n())
+
+df3%>%
+  group_by(payer_group, outcome_group)%>%
+  summarise(count = n())%>%
+  spread(outcome_group, count, fill = 0)%>%
+  right_join(payer_groups)
+
+# admission ---------------------------------------------------------------
+
+
