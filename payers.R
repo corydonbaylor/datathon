@@ -65,4 +65,3 @@ total = by_insurance%>%
          per_other_hospital = Other_Medical/count)
 
 
-install.packages("factoextra")
