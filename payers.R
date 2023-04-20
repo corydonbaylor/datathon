@@ -45,6 +45,13 @@ df2 = df2%>%
          
          )
 
+df2 = df2%>%
+  mutate(payer_group = ifelse(payer %in% c(1, 31, 40), "Medicaid/Medicare", "Private"),
+         payer_group = ifelse(payer %in% c(2), "Medicaid", payer_group),
+         payer_group = ifelse(payer %in% c(5), "Self-Pay", payer_group),
+         payer_group = ifelse(payer %in% c(10, 16,18,19,20,21,25,26,99), "Other", payer_group)
+  )
+
 by_insurance = df2%>%
   group_by(payers, outcome_group)%>%
   summarise(count = n())%>%
@@ -64,4 +71,30 @@ total = by_insurance%>%
          per_other= Other/count,
          per_other_hospital = Other_Medical/count)
 
+cost_by_insurance = df2%>%
+  group_by(payers)%>%
+  summarise(cost = mean(as.numeric(tchg), na.rm = T))
 
+
+df3 = df2%>%
+  select(id, provnpi, pstat, dx1, tchg, payers, payer_group, outcome)
+
+# https://dexur.com/icd9/65421/
+
+self = df3%>%
+  filter(payer_group == "Self-Pay")%>%
+  group_by(dx1)%>%
+  summarise(count = n())%>%
+  arrange(desc(count))
+
+medicaid = df3%>%
+  filter(payer_group == "Medicaid")%>%
+  group_by(dx1)%>%
+  summarise(count = n())%>%
+  arrange(desc(count))
+  
+private= df3%>%
+  filter(payer_group == "Private")%>%
+  group_by(dx1)%>%
+  summarise(count = n())%>%
+  arrange(desc(count))
